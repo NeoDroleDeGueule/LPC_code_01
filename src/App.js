@@ -100,7 +100,7 @@ const handConfigurations = [
 const facialPositions = [
   { position: 1, vowels: ["U", "ø"] }, // pommette
   { position: 2, vowels: ["ɛ", "u", "ɔ"] }, // menton
-  { position: 3, vowels: ["ɑ", "o", "œ", "ə", "_"] }, // côté
+  { position: 3, vowels: ["ɑ", "a", "o", "œ", "ə", "_"] }, // côté
   { position: 4, vowels: ["i", "O", "A"] }, // bouche
   { position: 5, vowels: ["y", "e", "E"] } // gorge
 ];
@@ -113,7 +113,7 @@ const App = () => {
 
   const handleTranscribe = async () => {
     const lowerCaseText = toLowerCase(text);
-    const cleanedText = lowerCaseText.replace(/[.,\/#!?$%\^&\*;:{}=\-_`~()]/g, '');
+    const cleanedText = lowerCaseText.replace(/[.,#!?$%&;:{}=\-_`~()]/g, '');
     const phonetic = await fetchPhoneticTranscription(cleanedText);
     if (phonetic) {
       setPhoneticText(phonetic);
