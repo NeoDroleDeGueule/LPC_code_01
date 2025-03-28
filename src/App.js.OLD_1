@@ -1,0 +1,123 @@
+import React, { useState } from 'react';
+import { Button, TextField, TextareaAutosize } from '@mui/material';
+
+const phoneticMap = {
+  "p": "clé 1",
+  "d": "clé 1",
+  "ʒ": "clé 1",
+  "l": "clé 2",
+  "ʃ": "clé 2",
+  "ɲ": "clé 2",
+  "w": "clé 2",
+  "g": "clé 3",
+  "b": "clé 4",
+  "n": "clé 4",
+  "ɥ": "clé 4",
+  "m": "clé 5",
+  "t": "clé 5",
+  "f": "clé 5",
+  "k": "clé 6",
+  "v": "clé 6",
+  "z": "clé 6",
+  "j": "clé 7",
+  "ŋ": "clé 7",
+  "s": "clé 8",
+  "ʁ": "clé 8",
+  "ɛ̃": "position 1",
+  "ø": "position 1",
+  "ɛ": "position 2",
+  "u": "position 2",
+  "ɔ": "position 2",
+  "a": "position 3",
+  "o": "position 3",
+  "œ": "position 3",
+  "i": "position 4",
+  "ɔ̃": "position 4",
+  "ɑ̃": "position 4",
+  "y": "position 5",
+  "œ̃": "position 5"
+};
+
+const fetchPhoneticTranscription = async (text) => {
+  console.log(`Fetching phonetic transcription for: ${text}`);
+  const response = await fetch(`http://localhost:5000/api/phonetic?text=${text}`);
+  console.log(`Response status: ${response.status}`);
+  const data = await response.json();
+  console.log(`Response data: ${data}`);
+  return data;
+};
+
+const transcribeToLPC = (phoneticText) => {
+  let result = [];
+  let i = 0;
+
+  while (i < phoneticText.length) {
+    if (phoneticText[i] in phoneticMap) {
+      if (phoneticText[i + 1] && phoneticText[i + 1] in phoneticMap) {
+        result.push(`${phoneticMap[phoneticText[i]]}/${phoneticMap[phoneticText[i + 1]]}`);
+        i += 2;
+      } else {
+        result.push(`${phoneticMap[phoneticText[i]]}/_`);
+        i += 1;
+      }
+    } else {
+      result.push(`_/${phoneticMap[phoneticText[i]]}`);
+      i += 1;
+    }
+  }
+
+  return result.join(' ');
+};
+
+const App = () => {
+  const [text, setText] = useState('');
+  const [phoneticText, setPhoneticText] = useState('');
+  const [lpcText, setLpcText] = useState('');
+
+  const handleTranscribe = async () => {
+    const phonetic = await fetchPhoneticTranscription(text);
+    if (phonetic) {
+      setPhoneticText(phonetic);
+      setLpcText(transcribeToLPC(phonetic));
+    } else {
+      setPhoneticText('');
+      setLpcText('');
+    }
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>Application CodeLPC</h1>
+      <div style={{ marginBottom: '16px' }}>
+        <TextField
+          label="Texte à saisir"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          fullWidth
+          variant="outlined"
+        />
+      </div>
+      <Button onClick={handleTranscribe} variant="contained" color="primary">
+        Valider
+      </Button>
+      <div style={{ marginTop: '16px' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>Texte transcrit en phonétique :</h2>
+        <TextareaAutosize
+          value={phoneticText}
+          readOnly
+          style={{ width: '100%', border: '1px solid #ccc', padding: '8px', marginBottom: '16px' }}
+        />
+      </div>
+      <div>
+        <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>Texte phonétique transcrit en paire consonne/voyelle :</h2>
+        <TextareaAutosize
+          value={lpcText}
+          readOnly
+          style={{ width: '100%', border: '1px solid #ccc', padding: '8px' }}
+        />
+      </div>
+    </div>
+  );
+};
+
+export default App;

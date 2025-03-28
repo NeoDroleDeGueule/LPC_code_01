@@ -1,0 +1,142 @@
+import React, { useState } from 'react';
+import { Button, TextField, TextareaAutosize, Container, Typography, Box } from '@mui/material';
+
+const fetchPhoneticTranscription = async (text) => {
+  console.log(`Fetching phonetic transcription for: ${text}`);
+  const response = await fetch(`http://localhost:5000/api/phonetic?text=${text}`);
+  console.log(`Response status: ${response.status}`);
+  const data = await response.json();
+  console.log(`Response data: ${data}`);
+  return data;
+};
+
+function toLowerCase(inputText) {
+  return inputText.toLowerCase();
+}
+
+function replacePhoneticCombinations(str) {
+  //alert("replace... + str :" + str);
+  const replacements = {
+    "ɑ̃": "A", // Alpha + tilde combinant → α̃
+    // Ajoutez d'autres combinaisons ici si nécessaire
+    "œ̃": "E",
+    "ɛ̃": "U",
+    "ɔ̃": "O",
+  };
+
+  let result = str;
+  for (const [key, value] of Object.entries(replacements)) {
+    result = result.replaceAll(key, value);
+  }
+  //alert("replace... + result :" + result);
+  return result;
+}
+
+const transcribeToPairs = (phoneticText) => {
+  //const normalizedText = phoneticText.normalize("NFC");
+  const replacedText = replacePhoneticCombinations(phoneticText);
+  const phonemes = replacedText.replaceAll(".", "");
+  //phonemes = utf8.encode(phonemes);
+  //const rawText = "a\u0303"; // Caractère "ã" sous forme combinée
+  //alert("replacedText : " + replacedText);
+  //alert("replacedText.length : " + replacedText.length);
+
+  const pairs = [];
+  //alert("phonemes = " + phonemes)
+  for (let i = 0; i < phonemes.length; i++) {
+    const currentPhoneme = phonemes[i];
+
+    if (currentPhoneme.trim() === "") {
+      continue;
+    }
+
+    const isConsonant = /[bcdɖdfɡhɦħjɟkklmnpɳŋŋqrʁrsʂʃtθʋvwxzʒʔ]/i.test(currentPhoneme);
+    //const isVowel = /[aɑ̃eiouyɑɒæœ̃ɛɛ̃ɪɔɔ̃ʊəɜʌɐaːeːiːoːuːəː]/i.test(currentPhoneme);
+
+    if (i + 1 < phonemes.length) {
+      if (isConsonant) {
+        if (/[aɑ̃eiouyɑɒæœ̃ɛɛ̃ɪɔɔ̃ʊəɜʌɐaːeːiːoːuːəː]/i.test(phonemes[i + 1])) {
+          //alert("phonemes = " + phonemes);
+          //alert("phonemes[3] = " + phonemes[3]);
+          pairs.push(`${currentPhoneme}${phonemes[i + 1]}`);
+          //pairs.push(currentPhoneme + phonemes[i + 1]);
+          //alert("pairs = " + pairs);
+          i++;
+        } else {
+          pairs.push(`${currentPhoneme}_`);
+        }
+      } else {
+        pairs.push(`-${currentPhoneme}`);
+      }
+    } else {
+      if (isConsonant) {
+        pairs.push(`${currentPhoneme}_`);
+      } else {
+        pairs.push(`-${currentPhoneme}`);
+      }
+    }
+  }
+
+  return pairs.join(' ');
+};
+
+const App = () => {
+  const [text, setText] = useState('');
+  const [phoneticText, setPhoneticText] = useState('');
+  const [pairsText, setPairsText] = useState('');
+  const [additionalText, setAdditionalText] = useState(''); // Nouveau champ de texte
+
+  const handleTranscribe = async () => {
+    const lowerCaseText = toLowerCase(text);
+    //alert("lowerCaseText : " + lowerCaseText);
+    const cleanedText = lowerCaseText.replace(/[.,\/#!?$%\^&\*;:{}=\-_`~()]/g, '');
+    const phonetic = await fetchPhoneticTranscription(cleanedText);
+    if (phonetic) {
+      setPhoneticText(phonetic);
+      setPairsText(transcribeToPairs(phonetic));
+    } else {
+      setPhoneticText('');
+      setPairsText('');
+    }
+  };
+
+  return (
+    <Container maxWidth="sm">
+      <Typography variant="h4" align="center" gutterBottom>
+        Application CodeLPC
+      </Typography>
+      <Box mb={2}>
+        <TextField
+          label="Texte à saisir"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          fullWidth
+          variant="outlined"
+        />
+      </Box>
+      <Box display="flex" justifyContent="center" mb={2}>
+        <Button onClick={handleTranscribe} variant="contained" color="primary">
+          Valider
+        </Button>
+      </Box>
+      <Box mb={2}>
+        <Typography variant="h6">Texte transcrit en phonétique :</Typography>
+        <TextareaAutosize
+          value={phoneticText}
+          readOnly
+          style={{ width: '100%', border: '1px solid #ccc', padding: '8px' }}
+        />
+      </Box>
+      <Box mb={2}>
+        <Typography variant="h6">Texte phonétique transcrit en paire consonne/voyelle :</Typography>
+        <TextareaAutosize
+          value={pairsText}
+          readOnly
+          style={{ width: '100%', border: '1px solid #ccc', padding: '8px' }}
+        />
+      </Box>
+    </Container>
+  );
+};
+
+export default App;
